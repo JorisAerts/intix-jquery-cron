@@ -1,0 +1,26 @@
+/*
+ * intix-jquery-cron
+ */
+
+.jq-cron label,
+.jq-cron select {
+    font-size: 75%;
+}
+
+.jq-cron .every select {
+    margin-left: .5em;
+}
+
+.jq-cron .type label {
+    display: block;
+}
+
+.jq-cron .type label input {
+    margin: .5em .5em 0 0;
+}
+
+.jq-cron div.field > div {
+    display: table-cell;
+    vertical-align: top;
+    padding: .5em;
+}
