@@ -7,8 +7,8 @@
     // some constants for compression reasons...
     undefined,
 
-    ASTERISK = "*",           // wildcard-value
-    QUESTION_MARK = "?",      // start-value
+    ASTERISK = "*",           // all values
+    QUESTION_MARK = "?",      // any value
     LIST_VALUE_NAME = "list", // value of the checkbox when selecting from the list of values
 
     VALUE = "value", // the value attribute
@@ -20,8 +20,6 @@
     CRON_FIELD_CHANGE = JQUERY_CHANGE + "_field",   // event name, fired when a cron-field changes
 
     extend = jQuery.extend,
-
-
 
     isString = function(object) {
         return "[object String]" === Object.prototype.toString.call(object);
@@ -70,17 +68,11 @@
 
             // substitute with text values
             if( options.useNames && offsetValue[4]){
-                if( options.startOfWeek === 1 && offsetValue[0] === offsetValues[5][0] ){
-                    // dow special case, turn 7 into 0
-                    intVal %= 7;
-                }
                 // substitute parsedValue with name
-                parsedValue = offsetValue[4].substr(intVal * 4, 3);
+                parsedValue = offsetValue[4].substr(intVal % 7 * 4, 3);
             } else{
                 parsedValue = intVal;
             }
-
-
             if (-1 === lastVal) {
                 // first value. i can be >0 if "" was selected too
                 partValue = rangeValue = parsedValue;
@@ -133,24 +125,26 @@
         radioTypeHtml = '<input type="radio" name="'+offset[0]+'Type"/>',
         labelHtml = '<label/>',
         $radioList = cronElement(options, radioTypeHtml).attr(VALUE, LIST_VALUE_NAME),
-        $radioAny = cronElement(options, radioTypeHtml).attr(VALUE, ASTERISK).prop(JQUERY_CHECKED, true),
+        $radioAll = cronElement(options, radioTypeHtml).attr(VALUE, ASTERISK).prop(JQUERY_CHECKED, true),
         $labelList = jQuery(labelHtml).text(options.text.select).prepend($radioList),
-        $labelAny = jQuery(labelHtml).text(options.text.any).prepend($radioAny),
-        $radioGroup = jQuery($radioList).add($radioAny),
-        $divType = cronElement(options, '<div class="type"/>').append($labelList).append($labelAny),
+        $labelAll = jQuery(labelHtml).text(options.text.all).prepend($radioAll),
+        $radioGroup = jQuery($radioList).add($radioAll),
+        $divType = cronElement(options, '<div class="type"/>').append($labelList).append($labelAll),
         $divSelect = cronElement(options, '<div class="select"/>').append($selectValue),
-        $divEvery = cronElement(options, '<div class="every"/>').append($labelEvery),
+        $divEvery = cronElement(options, '<div class="every"/>'),
 
-        $option, i, $radioStart, $labelStart // to be used below...
+        $option, i, $radioAny, $labelAny // to be used below...
         ;
 
-
+        if(offset[3].length){
+            $divEvery.append($labelEvery)
+        }
 
         if(options.allowQuestionMarks){
-            $radioStart = cronElement(options, radioTypeHtml).attr(VALUE, QUESTION_MARK);
-            $labelStart = jQuery(labelHtml).text(options.text.start).prepend($radioStart);
-            $divType.append($labelStart);
-            $radioGroup = $radioGroup.add($radioStart);
+            $radioAny = cronElement(options, radioTypeHtml).attr(VALUE, QUESTION_MARK);
+            $labelAny = jQuery(labelHtml).text(options.text.any).prepend($radioAny);
+            $divType.append($labelAny);
+            $radioGroup = $radioGroup.add($radioAny);
         }
 
         for (i = offset[1]; i < offset[2] + 1; i++) {
@@ -254,7 +248,7 @@
 
     // parse one cron field
     parseCronField = function(rxList, rxAlpha) {
-        var toNumberOrName = function(options, index, value, result, errorMessage) {
+        var toNumberOrName = function(options, index, value, result, errorMessage, startOfWeek) {
             errorMessage = "Invalid value: '" + value + "'";
             if (rxAlpha.test(value)) {
                 if(value.length !== 3){
@@ -266,7 +260,8 @@
                     error(errorMessage);
                 }
                 result /= 4;
-                return options._parts[index][0] === offsetValues[5][0] ? result % 7 : result;
+                startOfWeek = options.startOfWeek;
+                return options._parts[index][0] === offsetValues[5][0] ? ((result + 7 - startOfWeek) % 7) + startOfWeek : result;
             } else {
                 return parseInt(value, 10);
             }
@@ -414,8 +409,8 @@
 
                 every:      "{check} Every {select} {1}",
                 select:     "Select",
+                all:        "All",
                 any:        "Any",
-                start:      "Start",
 
                 sec:        "Seconds",
                 min:        "Minutes",
@@ -430,8 +425,16 @@
                 hours:       "hours",
                 doms:        "days",
                 months:      "months",
-                dows:        "days"
+                //dows:        "days",
                 //years:       "years"
+
+                field: {
+                    dow:   [ "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" ],
+                    month: [
+                        "January", "February", "March", "April", "May", "June", "July",
+                        "August", "September", "October", "November", "December"
+                    ]
+                }
 
             },
 
