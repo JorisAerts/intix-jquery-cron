@@ -140,7 +140,7 @@
             $divEvery.append($labelEvery)
         }
 
-        if(options.allowQuestionMarks){
+        if(options.allowAny){
             $radioAny = cronElement(options, radioTypeHtml).attr(VALUE, QUESTION_MARK);
             $labelAny = jQuery(labelHtml).text(options.text.any).prepend($radioAny);
             $divType.append($labelAny);
@@ -361,7 +361,7 @@
                     part[2] += options.startOfWeek;
                 }
                 part.rx = new RegExp(rxTemplate.replace(/~(\d)~/g, function(v, $) {
-                    return ($ === "1") ? (options.allowQuestionMarks ? "\\?|" : "") : (part[4] ? "|" + part[4] : "");
+                    return ($ === "1") ? (options.allowAny ? "\\?|" : "") : (part[4] ? "|" + part[4] : "");
                 }), "i");
             }
             return options;
@@ -396,7 +396,7 @@
         // default options
         defaults : {
             // allow ? as a wildcard
-            allowQuestionMarks : true,
+            allowAny : true,
             // class names to be added to the element
             className : {
                 control : "jq-cron",
@@ -456,7 +456,7 @@
             // add seconds?
             useSeconds : true,
             // add years? (not supported yet)
-            useYears : false,
+            // useYears : false,
             // use names in the generated cron expressions
             useNames : true
 
