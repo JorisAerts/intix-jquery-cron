@@ -27,6 +27,11 @@
     min-width: 5em;
 }
 
+.jq-cron select[multiple] option {
+    padding: .05em 0.4em;
+    margin: 0;
+}
+
 .jq-cron .type label {
     display: block;
 }

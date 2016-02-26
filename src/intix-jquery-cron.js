@@ -104,7 +104,7 @@
 
     // the biggest function... creates a form-part per cron-field
     drawPart = function(options, offset,
-                        text, texts, values, onChange, getValue, tmp, mod) {
+                        onChange, getValue, tmp, mod) {
 
         var
 
@@ -150,12 +150,22 @@
         for (i = offset[1]; i < offset[2] + 1; i++) {
             $option = jQuery(optionHtml);
             $selectValue.append($option);
-            values ? $option.text(values[i]).attr(VALUE, i) : $option.text(i);
+            tmp = offset[4]
+            tmp ?
+                $option
+                    .text(options.text.field[offset[0]][i % 7])
+                    .attr(VALUE, i)
+                :
+                $option.text(i);
         }
         for (i = offset[3].length; i--;) {
             tmp = offset[3][i];
             mod = offset[2] + (1 - offset[1]);
-            $selectEvery.append(jQuery(optionHtml).text(parseInt(mod / tmp, 10)).attr(VALUE, tmp));
+            $selectEvery.append(
+                jQuery(optionHtml)
+                    .text(parseInt(mod / tmp, 10))
+                    .attr(VALUE, tmp)
+            );
         }
 
         // returns the value of this part of the form
@@ -248,7 +258,8 @@
 
     // parse one cron field
     parseCronField = function(rxList, rxAlpha) {
-        var toNumberOrName = function(options, index, value, result, errorMessage, startOfWeek) {
+        var toNumberOrName = function(options, index, value, result,
+                                      errorMessage, startOfWeek) {
             errorMessage = "Invalid value: '" + value + "'";
             if (rxAlpha.test(value)) {
                 if(value.length !== 3){
@@ -265,7 +276,8 @@
             } else {
                 return parseInt(value, 10);
             }
-        }, parseRange = function(options, parts, index, rxCron, errorMessage, value, groups, values, from, to) {
+        }, parseRange = function(options, parts, index,
+                                 rxCron, errorMessage, value, groups, values, from, to) {
             rxCron = options._parts[index].rx;
             value = parts[index];
             errorMessage = "Field '" + value + "' is malformed.";
@@ -290,7 +302,8 @@
                 }
             }
             return [ values, groups[4] != null ? parseInt(groups[4].substr(1), 10) : undefined ];
-        }, parseList = function(options, parts, index, values, pieces, i) {
+        }, parseList = function(options, parts, index,
+                                values, pieces, i) {
             values = [];
             pieces = parts[index].split(',');
             for (i = 0; i < pieces.length; i++) {
