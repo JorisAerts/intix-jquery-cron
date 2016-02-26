@@ -2,16 +2,26 @@
 
     var
 
+    VERSION = "0.0.1", // ...so that the version easily jumps out in the minified version
+
+    // some constants for compression reasons...
     undefined,
 
-    ASTERISK = "*",
-    QUESTION_MARK = "?",
+    ASTERISK = "*",           // wildcard-value
+    QUESTION_MARK = "?",      // start-value
+    LIST_VALUE_NAME = "list", // value of the checkbox when selecting from the list of values
+
+    VALUE = "value", // the value attribute
 
     JQUERY_CHANGE = "change",
-    CRON_FIELD_CHANGE = JQUERY_CHANGE + "_field",
+    JQUERY_CHECKED = "checked",
+    JQUERY_IS_CHECKED = ":" + JQUERY_CHECKED,
 
-    // for compression reasons...
+    CRON_FIELD_CHANGE = JQUERY_CHANGE + "_field",   // event name, fired when a cron-field changes
+
     extend = jQuery.extend,
+
+
 
     isString = function(object) {
         return "[object String]" === Object.prototype.toString.call(object);
@@ -23,8 +33,8 @@
         ["min",    0,   59,  [2, 3, 4, 5, 6, 10, 12, 15, 20, 30]], // minutes
         ["hour",   0,   23,  [2, 3, 4, 6, 8, 12]                ], // hour
         ["dom",    1,   31,  [2, 3, 4, 5, 6, 10, 15]            ], // day of month
-        ["month",  0,   11,  [2, 3, 4, 6],                         "jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec" ], // month
-        ["dow",    0,   6,   [],                                   "mon|tue|wed|thu|fri|sat|sun"                     ]  // day of week
+        ["month",  0,   11,  [2, 3, 4, 6],                         "JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC" ], // month
+        ["dow",    0,   6,   [],                                   "MON|TUE|WED|THU|FRI|SAT|SUN"                     ]  // day of week
     ],
 
     error = function(message) {
@@ -42,76 +52,104 @@
     // The second value depict whether the value is a range or not. This is used
     // to determine
     // whether the "every"-option can be enabled
-    getSelected = function(value, singleValued, i, current, parsedValue, lastVal, rangeValue, partValue, isRange) {
+    getSelected = function(options, offsetValue, value,
+                           singleValued, i, intVal, parsedValue, lastVal, rangeValue, partValue, isRange) {
         isRange = true;
         lastVal = -1;
-        if ((singleValued = value.length === 1) && value[0] === ASTERISK) {
-            return [ ASTERISK, true ];
+        if (value.length === 0) {
+            return [ASTERISK, true];
+        } else if (singleValued = value.length === 1){
+            if ( value === ASTERISK) {
+                return [ASTERISK, true];
+            } else if ( value === QUESTION_MARK) {
+                return [QUESTION_MARK, false];
+            }
         }
         for (i = 0; i < value.length; i++) {
-            current = value[i];
-            if (current === ASTERISK) {
-                singleValued = value.length === 2;
-                continue;
+            intVal = parseInt(value[i], 10);
+
+            // substitute with text values
+            if( options.useNames && offsetValue[4]){
+                if( options.startOfWeek === 1 && offsetValue[0] === offsetValues[5][0] ){
+                    // dow special case, turn 7 into 0
+                    --intVal;
+                }
+                // substitute parsedValue with name
+                parsedValue = offsetValue[4].substr(intVal * 4, 3);
+            } else{
+                parsedValue = intVal;
             }
-            parsedValue = parseInt(value[i], 10);
+
+
             if (-1 === lastVal) {
                 // first value. i can be >0 if "" was selected too
                 partValue = rangeValue = parsedValue;
             } else {
                 partValue += "," + parsedValue;
-                isRange = isRange && parsedValue === lastVal + 1;
+                isRange = isRange && intVal === lastVal + 1;
             }
-            lastVal = parsedValue;
+            lastVal = intVal;
         }
         return [ isRange ? rangeValue + (singleValued ? "" : "-" + parsedValue) : partValue, !singleValued && isRange ];
     },
 
+    checkRadio = function($radioButtons, value){
+        $radioButtons.filter("[value='" + value + "']").prop(JQUERY_CHECKED, true)
+    },
+
     // the biggest function... creates a form-part per cron-field
-    drawPart = function(options, offset, text, texts, values, onChange, getValue, tmp, mod) {
+    drawPart = function(options, offset,
+                        text, texts, values, onChange, getValue, tmp, mod) {
         var
 
         offset = offsetValues[offset],
         optionHtml = '<option/>',
         $div = cronElement(options, '<div class="' + offset[0] + ' field"/>'),
-        $selectValue = cronElement(options, '<select multiple="multiple" style="width:50px"/>').attr("size", options.listSize).append(jQuery(optionHtml).attr("value", ASTERISK)).val(ASTERISK),
+        $selectValue = cronElement(options, '<select multiple="multiple" style="width:50px"/>').attr("size", options.listSize),
         $checkEvery = cronElement(options, '<input type ="checkbox"/> Every'),
         $labelEvery = jQuery('<label>Every</label>').prepend($checkEvery),
-        $selectEvery = cronElement(options, '<select style="width:50px"/>').append(jQuery(optionHtml).attr("value", ASTERISK)).val(ASTERISK),
+        $selectEvery = cronElement(options, '<select style="width:50px"/>').append(jQuery(optionHtml).attr(VALUE, ASTERISK)).val(ASTERISK),
 
         radioTypeHtml = '<input type="radio" name="'+offset[0]+'Type"/>',
         labelHtml = '<label/>',
-        list = "list",
-        $radioList = cronElement(options, radioTypeHtml).attr("value", list),
-        $radioAny = cronElement(options, radioTypeHtml).attr("value", ASTERISK).prop("checked", true),
-        $radioStart = cronElement(options, radioTypeHtml).attr("value", QUESTION_MARK),
+        $radioList = cronElement(options, radioTypeHtml).attr(VALUE, LIST_VALUE_NAME),
+        $radioAny = cronElement(options, radioTypeHtml).attr(VALUE, ASTERISK).prop(JQUERY_CHECKED, true),
         $labelList = jQuery(labelHtml).text("Select").prepend($radioList),
         $labelAny = jQuery(labelHtml).text("Any").prepend($radioAny),
-        $labelStart = jQuery(labelHtml).text("Start").prepend($radioStart),
-        $divType = cronElement(options, '<div class="type"/>').append($labelList).append($labelAny).append($labelStart),
+        $radioGroup = jQuery($radioList).add($radioAny),
+        $divType = cronElement(options, '<div class="type"/>').append($labelList).append($labelAny),
         $divSelect = cronElement(options, '<div class="select"/>').append($selectValue),
         $divEvery = cronElement(options, '<div class="every"/>').append($labelEvery).append($selectEvery),
-        $option, i
+
+        $option, i, $radioStart, $labelStart // to be used below...
         ;
+
+        if(options.allowQuestionMarks){
+            $radioStart = cronElement(options, radioTypeHtml).attr(VALUE, QUESTION_MARK);
+            $labelStart = jQuery(labelHtml).text("Start").prepend($radioStart);
+            $divType.append($labelStart);
+            $radioGroup = $radioGroup.add($radioStart);
+        }
 
         for (i = offset[1]; i < offset[2] + 1; i++) {
             $option = jQuery(optionHtml);
             $selectValue.append($option);
-            values ? $option.text(values[i]).attr("value", i) : $option.text(i);
+            values ? $option.text(values[i]).attr(VALUE, i) : $option.text(i);
         }
         for (i = offset[3].length; i--;) {
             tmp = offset[3][i];
             mod = offset[2] + (1 - offset[1]);
-            $selectEvery.append(jQuery(optionHtml).text(parseInt(mod / tmp, 10)).attr("value", tmp));
+            $selectEvery.append(jQuery(optionHtml).text(parseInt(mod / tmp, 10)).attr(VALUE, tmp));
         }
 
         // returns the value of this part of the form
-        getValue = function(result, everyEnabled, everyValue) {
-            result = getSelected($selectValue.val());
+        getValue = function(result, everyEnabled, everyValue, typeValue) {
+            typeValue = ($radioGroup.filter(JQUERY_IS_CHECKED).val());
+            result = getSelected(options, offset, typeValue === ASTERISK ? ASTERISK : typeValue === QUESTION_MARK ? QUESTION_MARK : $selectValue.val() || [] );
             everyEnabled = result[1];
             jQuery($checkEvery).add($selectEvery).prop('disabled', !everyEnabled);
             everyValue = $selectEvery.val();
-            return result[0] + (everyEnabled && everyValue !== ASTERISK && $checkEvery.is(":checked") ? "/" + everyValue : "");
+            return result[0] + (everyEnabled && everyValue !== ASTERISK && $checkEvery.is(JQUERY_IS_CHECKED) ? "/" + everyValue : "");
         };
 
         // define the onChange function, and fire it once
@@ -119,15 +157,21 @@
             $div.trigger(CRON_FIELD_CHANGE, [ getValue() ]);
         })();
 
+        // when the selection list changes, set radio to list
+        $selectValue.bind(JQUERY_CHANGE, function() {
+            checkRadio($radioGroup, LIST_VALUE_NAME);
+        });
+
         // when the "every" value changes, enable or disable the checkbox
         $selectEvery.bind(JQUERY_CHANGE, function() {
-            $checkEvery.prop("checked", $selectEvery.val() !== ASTERISK);
+            $checkEvery.prop(JQUERY_CHECKED, $selectEvery.val() !== ASTERISK);
         });
 
         // bind the onchange function to the controls
         jQuery($selectValue)
             .add($checkEvery)
             .add($selectEvery)
+            .add($radioGroup)
             .bind(JQUERY_CHANGE, onChange);
 
         return extend([
@@ -136,7 +180,8 @@
                 .append($divEvery),
             $selectValue,
             $checkEvery,
-            $selectEvery
+            $selectEvery,
+            $radioGroup
         ], {
             val : getValue
         });
@@ -145,8 +190,15 @@
 
     // set the values
     changePart = function(part, value) {
+        if( value[0][0] === ASTERISK || value[0][0] === QUESTION_MARK ){
+            part[1].val("");
+            checkRadio(part[4], value[0][0]);
+        } else {
+            part[1].val(value[0]);
+            checkRadio(part[4], LIST_VALUE_NAME);
+        }
         part[1].val(value[0]);
-        part[2].prop("checked", value[1] !== undefined);
+        part[2].prop(JQUERY_CHECKED, value[1] !== undefined);
         part[3].val(value[1]);
     },
 
@@ -182,7 +234,7 @@
         var toNumber = function(options, index, value, result) {
             if (value.length === 3) {
                 // we're dealing with a string value
-                result = options._parts[index][4].indexOf(value.toLowerCase()) / 4;
+                result = options._parts[index][4].indexOf(value.toUpperCase()) / 4;
                 return options._parts[index][0] === offsetValues[5][0] ? result + (7 + (options.startOfWeek - 1)) - 6 : result;
             } else {
                 return parseInt(value, 10);
@@ -195,11 +247,11 @@
                 error(errorMessage);
             }
             groups = rxCron.exec(value);
-            if (groups[1] === ASTERISK) {
+            if (groups[1] === ASTERISK || groups[1] === QUESTION_MARK) {
                 if (groups[2] != null) {
                     error(errorMessage);
                 }
-                values = [ ASTERISK ];
+                values = [ groups[1] ];
             } else {
                 values = [];
                 from = toNumber(options, index, groups[1]);
@@ -223,7 +275,7 @@
         return function(parts, index, options) {
             return (rxList.test(parts[index]) ? parseList : parseRange)(options, parts, index);
         }
-    }(/^[\d,]+$/),
+    }(/^[\w,]+$/),
 
     // get the value of a cron expression
     getValue = function(value, options, shorthand, parts, errorMessage, i, result) {
@@ -264,7 +316,11 @@
             options = extend({}, fn.defaults, options);
             parts = options._parts = [];
             for (var i = options.useSeconds ? 0 : 1; i < offsetValues.length; i++) {
-                parts.push(part = offsetValues[i]);
+                parts.push(part = [].concat(offsetValues[i]));
+                //if(part[0] === offsetValues[5][0]){
+                //    part[1] += options.startOfWeek;
+                //    part[2] += options.startOfWeek;
+                //}
                 part.rx = new RegExp(rxTemplate.replace(/~(\d)~/g, function(v, $) {
                     return ($ === "1") ? (options.allowQuestionMarks ? "\\?|" : "") : (part[4] ? "|" + part[4] : "");
                 }), "i");
@@ -296,7 +352,7 @@
     // extension for the cron-function
     fn = {
         // the current version of this plugin
-        VERSION : "0.1.0",
+        VERSION : VERSION,
         // default options
         defaults : {
             // allow ? as a wildcard
