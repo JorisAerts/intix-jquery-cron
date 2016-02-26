@@ -2,7 +2,7 @@
 
     var
 
-    VERSION = "0.0.1", // ...so that the version easily jumps out in the minified version
+    VERSION = "0.0.2", // ...so that the version easily jumps out in the minified version
 
     // some constants for compression reasons...
     undefined,
