@@ -2,13 +2,19 @@
  * intix-jquery-cron
  */
 
-.jq-cron label,
-.jq-cron select {
+.jq-cron label {
     font-size: 75%;
 }
 
-.jq-cron .every select {
-    margin-left: .5em;
+.jq-cron h2 {
+    font-size: 100%;
+    margin: 0 0 -.2em 0;
+    opacity: .2;
+    position: relative;
+}
+
+.jq-cron select[multiple] {
+    min-width: 5em;
 }
 
 .jq-cron .type label {
@@ -22,5 +28,5 @@
 .jq-cron div.field > div {
     display: table-cell;
     vertical-align: top;
-    padding: .5em;
+    padding: .2em 1em .5em 0;
 }

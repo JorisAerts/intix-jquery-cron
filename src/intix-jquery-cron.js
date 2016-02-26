@@ -97,6 +97,19 @@
         $radioButtons.filter("[value='" + value + "']").prop(JQUERY_CHECKED, true)
     },
 
+    template = function(rxSplit, rxTemplate){
+        return function(text, substitutes,
+                 parts, part, i, l, result){
+            result = [];
+            parts = text.split(rxSplit);
+            for(i = 0, l = parts.length; i < l; i++){
+                part = parts[i];
+                result[i] = rxTemplate.test(part) ? substitutes[rxTemplate.exec(part)[1]] : part;
+            }
+            return result;
+        }
+    }(/({\w+})/g, /^{(.*)}$/),
+
     // the biggest function... creates a form-part per cron-field
     drawPart = function(options, offset,
                         text, texts, values, onChange, getValue, tmp, mod) {
@@ -104,30 +117,38 @@
         var
 
         offset = options._parts[offset],
-        optionHtml = '<option/>',
+        $title = cronElement(options, '<h2/>').text(options.text[offset[0]]),
         $div = cronElement(options, '<div class="' + offset[0] + ' field"/>'),
-        $selectValue = cronElement(options, '<select multiple="multiple" style="width:50px"/>').attr("size", options.listSize),
-        $checkEvery = cronElement(options, '<input type ="checkbox"/> Every'),
-        $labelEvery = jQuery('<label>Every</label>').prepend($checkEvery),
-        $selectEvery = cronElement(options, '<select style="width:50px"/>').append(jQuery(optionHtml).attr(VALUE, ASTERISK)).val(ASTERISK),
-
+        $selectValue = cronElement(options, '<select multiple="multiple"/>').attr("size", options.listSize),
+        $checkEvery = cronElement(options, '<input type ="checkbox"/>'),
+        optionHtml = '<option/>',
+        $selectEvery = cronElement(options, '<select/>').append(jQuery(optionHtml).attr(VALUE, ASTERISK)).val(ASTERISK),
+        $labelEvery = jQuery('<label></label>').append(
+            template(options.text.every, {
+                check:  $checkEvery,
+                select: $selectEvery,
+                1:      options.text[offset[0]+"s"]
+            })
+        ),
         radioTypeHtml = '<input type="radio" name="'+offset[0]+'Type"/>',
         labelHtml = '<label/>',
         $radioList = cronElement(options, radioTypeHtml).attr(VALUE, LIST_VALUE_NAME),
         $radioAny = cronElement(options, radioTypeHtml).attr(VALUE, ASTERISK).prop(JQUERY_CHECKED, true),
-        $labelList = jQuery(labelHtml).text("Select").prepend($radioList),
-        $labelAny = jQuery(labelHtml).text("Any").prepend($radioAny),
+        $labelList = jQuery(labelHtml).text(options.text.select).prepend($radioList),
+        $labelAny = jQuery(labelHtml).text(options.text.any).prepend($radioAny),
         $radioGroup = jQuery($radioList).add($radioAny),
         $divType = cronElement(options, '<div class="type"/>').append($labelList).append($labelAny),
         $divSelect = cronElement(options, '<div class="select"/>').append($selectValue),
-        $divEvery = cronElement(options, '<div class="every"/>').append($labelEvery).append($selectEvery),
+        $divEvery = cronElement(options, '<div class="every"/>').append($labelEvery),
 
         $option, i, $radioStart, $labelStart // to be used below...
         ;
 
+
+
         if(options.allowQuestionMarks){
             $radioStart = cronElement(options, radioTypeHtml).attr(VALUE, QUESTION_MARK);
-            $labelStart = jQuery(labelHtml).text("Start").prepend($radioStart);
+            $labelStart = jQuery(labelHtml).text(options.text.start).prepend($radioStart);
             $divType.append($labelStart);
             $radioGroup = $radioGroup.add($radioStart);
         }
@@ -176,7 +197,8 @@
             .bind(JQUERY_CHANGE, onChange);
 
         return extend([
-            $div.append($divType)
+            $div.append($title)
+                .append($divType)
                 .append($divSelect)
                 .append($divEvery),
             $selectValue,
@@ -357,6 +379,8 @@
         });
     },
 
+
+
     // extension for the cron-function
     fn = {
         // the current version of this plugin
@@ -387,12 +411,30 @@
             },
 
             text : {
-                seconds : "seconds",
-                minutes : "minutes",
-                hours : "hours",
-                days : "seconds",
-                seconds : "seconds"
+
+                every:      "{check} Every {select} {1}",
+                select:     "Select",
+                any:        "Any",
+                start:      "Start",
+
+                sec:        "Seconds",
+                min:        "Minutes",
+                hour:       "Hours",
+                dom:        "Day of month",
+                month:      "Month",
+                dow:        "Day of week",
+                //year:       "Year",
+
+                secs:        "seconds",
+                mins:        "minutes",
+                hours:       "hours",
+                doms:        "days",
+                months:      "months",
+                dows:        "days"
+                //years:       "years"
+
             },
+
             // first day of the week
             startOfWeek : 0,
             // add seconds?
