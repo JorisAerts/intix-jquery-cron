@@ -1,4 +1,4 @@
-# INTIX® jquery-cron
+# INTIX<sup>®</sup> jquery-cron
 _Fresh, brand new jQuery cron plugin, developed by INTIX®_
 
 
@@ -18,43 +18,38 @@ jQuery("selector").cron({
 
 
 ## Options
-##### allowAny
-> _Default: true_.
+<dl>
 
-> Allows the "_any_" value, represented by a question mark "?" in cron expressions.
+<dt><b>allowAny</b></dt>
+<dd><em>Default: true.</em></dd>
+<dd>Allows the "<em>any</em>" value, represented by a question mark "?" in cron expressions.<dd>
 
-##### bindTo
-> _Default: undefined_.
+<dt><b>bindTo</b></dt>
+<dd><em>Default: undefined.</em></dd>
+<dd>Bind the instance of the cron plugin to a jQuery element. Changes on the cron instance affect the control's value and vice versa.<dd>
 
-> Bind the instance of the cron plugin to a jQuery element. Changes on the cron instance affect the control's value and vice versa.
+<dt><b>className.control</b></dt>
+<dd><em>Default: 'jq-cron'.</em></dd>
+<dd>The classname to be used on the created control and some of its sub-elements. Changing this option will break the currently defined rules in the stylesheet.<dd>
 
-##### className.control
-> _Default: 'jq-cron'_.
+<dt><b>className.error</b></dt>
+<dd><em>Default: 'Error'.</em></dd>
+<dd>The classname to be used on the bound control in case of an error. (see bindTo)<dd>
 
-> The classname to be used on the created control and some of its sub-elements. Changing this option will break the currently defined rules in the stylesheet.
+<dt><b>listSize</b></dt>
+<dd><em>Default: 5.</em></dd>
+<dd>The number of items to be displayed on the value selection lists.<dd>
 
-##### className.error
-> _Default: 'Error'_.
+<dt><b>startOfWeek</b></dt>
+<dd><em>Default: 0.</em></dd>
+<dd>Can either be <em>0</em> or <em>1</em>. When <em>0</em>, the week starts on Sunday, when <em>1</em> on the other hand, the week starts on Monday.<dd>
 
-> The classname to be used on the bound control in case of an error. (see bindTo)
+<dt><b>useSeconds</b></dt>
+<dd><em>Default: true.</em></dd>
+<dd>Display (and use) the <em>seconds field</em> in a cron expression. This will be the first field of the cron expression.<dd>
 
-##### listSize
-> _Default: 5_.
+<dt><b>useNames</b></dt>
+<dd><em>Default: true.</em></dd>
+<dd>Use names instead of numbers in the generated cron expressions. This has nothing to do with the parsing of an expression, because during parsing, both numbers and names will be parsed correctly.<dd>
 
-> The number of items to be displayed on the value selection lists.
-
-##### startOfWeek
-> _Default: 0_.
-
-> Can either be _0_ or _1_. When _0_, the week starts on Sunday, when _1_ on the other hand, the week starts on Monday.
-
-##### useSeconds
-> _Default: true_.
-
-> Display (and use) the _seconds field_ in a cron expression. This will be the first field of the cron expression.
-
-##### useNames
-> _Default: true_.
-
-> Use names instead of numbers in the generated cron expressions. This has nothing to do with the parsing of an expression, because during parsing, both numbers and names will be parsed correctly.
-
+</dl>
