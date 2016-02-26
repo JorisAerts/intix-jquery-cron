@@ -34,11 +34,11 @@
         ["hour",   0,   23,  [2, 3, 4, 6, 8, 12]                ], // hour
         ["dom",    1,   31,  [2, 3, 4, 5, 6, 10, 15]            ], // day of month
         ["month",  0,   11,  [2, 3, 4, 6],                         "JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC" ], // month
-        ["dow",    0,   6,   [],                                   "MON|TUE|WED|THU|FRI|SAT|SUN"                     ]  // day of week
+        ["dow",    0,   6,   [],                                   "SUN|MON|TUE|WED|THU|FRI|SAT"                     ]  // day of week
     ],
 
-    error = function(message) {
-        throw new EvalError(message);
+    error = function(message, eval) {
+        throw new (eval === false ? Error : EvalError)(message);
     },
 
     cronElement = function(options, html) {
@@ -72,7 +72,7 @@
             if( options.useNames && offsetValue[4]){
                 if( options.startOfWeek === 1 && offsetValue[0] === offsetValues[5][0] ){
                     // dow special case, turn 7 into 0
-                    --intVal;
+                    intVal %= 7;
                 }
                 // substitute parsedValue with name
                 parsedValue = offsetValue[4].substr(intVal * 4, 3);
@@ -100,9 +100,10 @@
     // the biggest function... creates a form-part per cron-field
     drawPart = function(options, offset,
                         text, texts, values, onChange, getValue, tmp, mod) {
+
         var
 
-        offset = offsetValues[offset],
+        offset = options._parts[offset],
         optionHtml = '<option/>',
         $div = cronElement(options, '<div class="' + offset[0] + ' field"/>'),
         $selectValue = cronElement(options, '<select multiple="multiple" style="width:50px"/>').attr("size", options.listSize),
@@ -230,12 +231,20 @@
     },
 
     // parse one cron field
-    parseCronField = function(rxList) {
-        var toNumber = function(options, index, value, result) {
-            if (value.length === 3) {
+    parseCronField = function(rxList, rxAlpha) {
+        var toNumberOrName = function(options, index, value, result, errorMessage) {
+            errorMessage = "Invalid value: '" + value + "'";
+            if (rxAlpha.test(value)) {
+                if(value.length !== 3){
+                    error(errorMessage);
+                }
                 // we're dealing with a string value
-                result = options._parts[index][4].indexOf(value.toUpperCase()) / 4;
-                return options._parts[index][0] === offsetValues[5][0] ? result + (7 + (options.startOfWeek - 1)) - 6 : result;
+                result = options._parts[index][4].indexOf(value.toUpperCase())
+                if(-1 === result){
+                    error(errorMessage);
+                }
+                result /= 4;
+                return options._parts[index][0] === offsetValues[5][0] ? result % 7 : result;
             } else {
                 return parseInt(value, 10);
             }
@@ -254,8 +263,8 @@
                 values = [ groups[1] ];
             } else {
                 values = [];
-                from = toNumber(options, index, groups[1]);
-                to = (groups[3] != null ? toNumber(options, index, groups[3]) : from) + 1;
+                from = toNumberOrName(options, index, groups[1]);
+                to = (groups[3] != null ? toNumberOrName(options, index, groups[3]) : from) + 1;
                 if (from >= to) {
                     error(errorMessage);
                 }
@@ -268,14 +277,14 @@
             values = [];
             pieces = parts[index].split(',');
             for (i = 0; i < pieces.length; i++) {
-                values[i] = toNumber(options, index, pieces[i]);
+                values[i] = toNumberOrName(options, index, pieces[i]);
             }
             return [ values ];
         };
         return function(parts, index, options) {
             return (rxList.test(parts[index]) ? parseList : parseRange)(options, parts, index);
         }
-    }(/^[\w,]+$/),
+    }(/^[\w,]+$/, /^[a-z]+$/i),
 
     // get the value of a cron expression
     getValue = function(value, options, shorthand, parts, errorMessage, i, result) {
@@ -314,18 +323,17 @@
     parseOptions = function(rxTemplate) {
         return function(options, parts, part) {
             options = extend({}, fn.defaults, options);
-            parts = options._parts = [];
+            parts = (options._parts = []);
             for (var i = options.useSeconds ? 0 : 1; i < offsetValues.length; i++) {
                 parts.push(part = [].concat(offsetValues[i]));
-                //if(part[0] === offsetValues[5][0]){
-                //    part[1] += options.startOfWeek;
-                //    part[2] += options.startOfWeek;
-                //}
+                if(part[0] === offsetValues[5][0]){
+                    part[1] += options.startOfWeek;
+                    part[2] += options.startOfWeek;
+                }
                 part.rx = new RegExp(rxTemplate.replace(/~(\d)~/g, function(v, $) {
                     return ($ === "1") ? (options.allowQuestionMarks ? "\\?|" : "") : (part[4] ? "|" + part[4] : "");
                 }), "i");
             }
-            options._regex = "";
             return options;
         }
     }("^(\\*|~1~\\d{1,2}~2~)?(\\-?(\\d{1,2}~2~))?(\\/\\d{1,2})?$"),
@@ -386,7 +394,7 @@
                 seconds : "seconds"
             },
             // first day of the week
-            startOfWeek : 1,
+            startOfWeek : 0,
             // add seconds?
             useSeconds : true,
             // add years? (not supported yet)
@@ -432,7 +440,11 @@
 
     // The jQuery cron-function
     jQuery.fn.cron = extend(function(options) {
-        init(parseOptions(options), this);
+        if(isString(options)){
+            error("Not supported yet.", false);
+        } else {
+            init(parseOptions(options), this);
+        }
     }, fn);
 
 })(jQuery);
