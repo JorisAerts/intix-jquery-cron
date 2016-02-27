@@ -2,8 +2,13 @@
 _Fresh, brand new jQuery cron plugin, developed by INTIX®_
 
 
-Limited Quartz Scheduler support.
-**TODO:** years, L & W
+Quartz Scheduler support (still working on the full feature set).
+
+**TODO:** 
+ * Last (**L**)
+ * Weekday (**W**)
+ * nth day in the month (**#**)
+ * year-field
 
 ## Usage
 ```javascript
