@@ -107,7 +107,6 @@
     // the biggest function... creates a form-part per cron-field
     drawPart = function(options, offset,
                         onChange, val, tmp, mod) {
-
         var
 
         offset = options._parts[offset],
@@ -142,7 +141,7 @@
             $divEvery.append($labelEvery)
         }
 
-        if(options.allowAny){
+        if(options.allowAny && offset[0] === offsetValues[3][0] || offset[0] === offsetValues[5][0]){
             $radioAny = cronElement(options, radioTypeHtml).attr(VALUE, QUESTION_MARK);
             $labelAny = jQuery(labelHtml).text(options.text.any).prepend($radioAny);
             $divType.append($labelAny);
@@ -356,21 +355,24 @@
 
     // parse the options and generate an internal options object
     parseOptions = function(rxTemplate) {
-        return function(options, parts, part) {
+        return function(options, parts, part, is5, i) {
             options = extend({}, fn.defaults, options);
             parts = (options._parts = []);
-            for (var i = options.useSeconds ? 0 : 1; i < offsetValues.length; i++) {
+            for (i = options.useSeconds ? 0 : 1; i < offsetValues.length; i++) {
                 parts.push(part = [].concat(offsetValues[i]));
-                if(part[0] === offsetValues[5][0]){
+                if(is5 = part[0] === offsetValues[5][0]){
                     part[1] += options.startOfWeek;
                     part[2] += options.startOfWeek;
                 }
                 part.rx = new RegExp(rxTemplate.replace(/~(\d)~/g, function(v, $) {
-                    return ($ === "1") ? (options.allowAny ? "\\?|" : "") : (part[4] ? "|" + part[4] : "");
+                    return ($ === "1") ?
+                        (options.allowAny && part[0] === offsetValues[3][0] || is5 ? "\\?|" : "")
+                        :
+                        (part[4] ? "|" + part[4] : "");
                 }), "i");
             }
             return options;
-        }
+        };
     }("^(\\*|~1~\\d{1,2}~2~)?(\\-?(\\d{1,2}~2~))?(\\/\\d{1,2})?$"),
 
     // bind an element to change and listen for the values
@@ -400,6 +402,9 @@
         defaults : {
             // allow ? as a wildcard
             allowAny : true,
+
+
+
             // class names to be added to the element
             className : {
                 control : "jq-cron",
