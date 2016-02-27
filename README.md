@@ -33,7 +33,7 @@ jQuery("selector").cron({
 <dd>The classname to be used on the created control and some of its sub-elements. Changing this option will break the currently defined rules in the stylesheet.<dd>
 
 <dt><b>className.error</b></dt>
-<dd><em>Default: 'Error'.</em></dd>
+<dd><em>Default: 'error'.</em></dd>
 <dd>The classname to be used on the bound control in case of an error. (see bindTo)<dd>
 
 <dt><b>listSize</b></dt>
