@@ -11,6 +11,8 @@
     QUESTION_MARK = "?",      // any value
     LIST_VALUE_NAME = "list", // value of the checkbox when selecting from the list of values
 
+    CRON_DATA_ID = "cron",
+
     VALUE = "value", // the value attribute
 
     JQUERY_CHANGE = "change",
@@ -104,7 +106,7 @@
 
     // the biggest function... creates a form-part per cron-field
     drawPart = function(options, offset,
-                        onChange, getValue, tmp, mod) {
+                        onChange, val, tmp, mod) {
 
         var
 
@@ -169,7 +171,7 @@
         }
 
         // returns the value of this part of the form
-        getValue = function(result, everyEnabled, everyValue, typeValue) {
+        val = function(result, everyEnabled, everyValue, typeValue) {
             typeValue = ($radioGroup.filter(JQUERY_IS_CHECKED).val());
             result = getSelected(options, offset, typeValue === ASTERISK ? ASTERISK : typeValue === QUESTION_MARK ? QUESTION_MARK : $selectValue.val() || [] );
             everyEnabled = result[1];
@@ -180,7 +182,7 @@
 
         // define the onChange function, and fire it once
         (onChange = function() {
-            $div.trigger(CRON_FIELD_CHANGE, [ getValue() ]);
+            $div.trigger(CRON_FIELD_CHANGE, [ val() ]);
         })();
 
         // when the selection list changes, set radio to list
@@ -210,7 +212,7 @@
             $selectEvery,
             $radioGroup
         ], {
-            val : getValue
+            val : val
         });
 
     },
@@ -238,15 +240,18 @@
             $el.append((parts[i] = drawPart(options, i))[0]);
             if (options.bindTo) {
                 parts[i][0].on(CRON_FIELD_CHANGE, function() {
-                    for (var result = [], i = 0; i < options._parts.length; i++) {
-                        result[i] = parts[i].val();
-                    }
-                    options.bindTo.val(result.join(" "));
+                    options.bindTo.val(options.val());
                 })
             }
         }
+        options.val = function(){
+          for (var result = [], i = 0; i < options._parts.length; i++) {
+              result[i] = parts[i].val();
+          }
+          return result.join(" ");
+        };
         options.change = function(value) {
-            value = getValue(value, options);
+            value = getCronFields(value, options);
             for (var i = 0; i < parts.length; i++) {
                 changePart(parts[i], value[i]);
             }
@@ -317,7 +322,7 @@
     }(/^[\w,]+$/, /^[a-z]+$/i),
 
     // get the value of a cron expression
-    getValue = function(value, options, shorthand, parts, errorMessage, i, result) {
+    getCronFields = function(value, options, shorthand, parts, errorMessage, i, result) {
 
         // error message to be thrown in case of an invalid expression
         errorMessage = "Invalid cron expression: '" + value + "'";
@@ -386,8 +391,6 @@
             }
         });
     },
-
-
 
     // extension for the cron-function
     fn = {
@@ -473,7 +476,7 @@
 
         // exposed parsing function
         parse : function(value, options, parsedValue, i) {
-            parsedValue = getValue(value, parseOptions(options));
+            parsedValue = getCronFields(value, parseOptions(options));
             if (isString(parsedValue)) {
                 return parsedValue;
             } else {
@@ -490,19 +493,35 @@
 
     // initialize the control
     init = function(options, $el) {
+        $el.data(CRON_DATA_ID, {
+          options: options
+        });
         drawForm(options, $el.addClass(options.className.control));
         bindTo(options);
-    }
+    },
+
+    methods = function(tooSoonError){
+        return {
+            value: function(cron){
+              return (cron = jQuery(this).data(CRON_DATA_ID)) ? cron.options.val() : error(tooSoonError, false);
+            }
+        }
+    }("cannot call methods prior to initialization")
 
     ;
 
     // The jQuery cron-function
     jQuery.fn.cron = extend(function(options) {
         if(isString(options)){
-            error("Not supported yet.", false);
+            return methods[options] ?
+                methods[options].apply(this, Array.prototype.slice.call(arguments, 1))
+              :
+                error("Unsupported command '" + options + "'.", false)
+              ;
         } else {
             init(parseOptions(options), this);
         }
+        return this;
     }, fn);
 
 })(jQuery);
