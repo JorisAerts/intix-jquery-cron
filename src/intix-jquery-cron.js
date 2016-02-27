@@ -37,8 +37,10 @@
         ["dow",    0,   6,   [],                                   "SUN|MON|TUE|WED|THU|FRI|SAT"                     ]  // day of week
     ],
 
-    error = function(message, eval) {
-        throw new (eval === false ? Error : EvalError)(message);
+    error = function(code, message, error) {
+        error = new (code >= 200 ? EvalError : Error)(message);
+        error.code = code;
+        throw error;
     },
 
     cronElement = function(options, html) {
@@ -267,12 +269,12 @@
             errorMessage = "Invalid value: '" + value + "'";
             if (rxAlpha.test(value)) {
                 if(value.length !== 3){
-                    error(errorMessage);
+                    error(202, errorMessage);
                 }
                 // we're dealing with a string value
                 result = options._parts[index][4].indexOf(value.toUpperCase())
                 if(-1 === result){
-                    error(errorMessage);
+                    error(202, errorMessage);
                 }
                 result /= 4;
                 startOfWeek = options.startOfWeek;
@@ -286,12 +288,12 @@
             value = parts[index];
             errorMessage = "Field '" + value + "' is malformed.";
             if (!rxCron.test(value)) {
-                error(errorMessage);
+                error(202, errorMessage);
             }
             groups = rxCron.exec(value);
             if (groups[1] === ASTERISK || groups[1] === QUESTION_MARK) {
                 if (groups[2] != null) {
-                    error(errorMessage);
+                    error(202, errorMessage);
                 }
                 values = [ groups[1] ];
             } else {
@@ -299,7 +301,7 @@
                 from = toNumberOrName(options, index, groups[1]);
                 to = (groups[3] != null ? toNumberOrName(options, index, groups[3]) : from) + 1;
                 if (from >= to) {
-                    error(errorMessage);
+                    error(202, errorMessage);
                 }
                 for (; from < to; from++) {
                     values.push(from);
@@ -340,7 +342,7 @@
 
         // if the expression if too short, then throw an Error
         if (parts.length != options._parts.length) {
-            error(errorMessage);
+            error(201, errorMessage);
         }
         try {
             result = [];
@@ -349,7 +351,7 @@
             }
             return shorthand || result;
         } catch (e) {
-            error(errorMessage + (e.message ? ". " + e.message : ""));
+            error(201, errorMessage + (e.message ? ". " + e.message : ""));
         }
     },
 
@@ -508,7 +510,7 @@
     methods = function(tooSoonError){
         return {
             value: function(cron){
-              return (cron = jQuery(this).data(CRON_DATA_ID)) ? cron.options.val() : error(tooSoonError, false);
+              return (cron = jQuery(this).data(CRON_DATA_ID)) ? cron.options.val() : error(101, tooSoonError);
             }
         }
     }("cannot call methods prior to initialization")
@@ -521,7 +523,7 @@
             return methods[options] ?
                 methods[options].apply(this, Array.prototype.slice.call(arguments, 1))
               :
-                error("Unsupported command '" + options + "'.", false)
+                error(100, "Unsupported command '" + options + "'.")
               ;
         } else {
             init(parseOptions(options), this);
