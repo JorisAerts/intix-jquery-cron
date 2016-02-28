@@ -108,7 +108,7 @@
 
     // the biggest function... creates a form-part per cron-field
     drawPart = function(options, offset,
-                        onChange, val, tmp, mod) {
+                        onChange, val, tmp) {
         var
 
         offset = options._parts[offset],
@@ -161,13 +161,9 @@
                 :
                 $option.text(i);
         }
-        for (i = offset[3].length; i--;) {
-            tmp = offset[3][i];
-            mod = offset[2] + (1 - offset[1]);
+        for (i = 0; i < offset[3].length; i++) {
             $selectEvery.append(
-                jQuery(optionHtml)
-                    .text(parseInt(mod / tmp, 10))
-                    .attr(VALUE, tmp)
+                jQuery(optionHtml).text(offset[3][i])
             );
         }
 
